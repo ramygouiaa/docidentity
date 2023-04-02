@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const cors = require('cors');
 const bodyParser = require("body-parser");
 
 const port = process.env.PORT || 4005;
@@ -10,7 +11,7 @@ const app = express();
 app.use(cors({
     origin:"*"
     }));
-    
+
 app.use(bodyParser.json());
 app.use(bodyParser.text());
 

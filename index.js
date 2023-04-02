@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 // function to encrypt the document data 
 const encryptDocument = async (docData) => {
     return await new Promise((resolve, reject) => {
-        axios.post('https://localhost:3000/encryptdocdata', {
+        axios.post('http://localhost:3000/encryptdocdata', {
             documentdata: docData
         })
             .then((response) => {
@@ -36,7 +36,7 @@ const encryptDocument = async (docData) => {
 // function to decrypt the document data
 const decryptDocument = async (encryptedDoc) => {
     return await new Promise((resolve, reject) => {
-        axios.post('https://localhost:3000/decryptdocdata', {
+        axios.post('http://localhost:3000/decryptdocdata', {
             encryptedDocumentData: encryptedDoc
         })
             .then((response) => {
@@ -52,7 +52,25 @@ const decryptDocument = async (encryptedDoc) => {
     })
 }
 
-//TODO function to save the encrypted document to IPFS. it should return the IPFS cid and a document Id
+// function to save the encrypted document to IPFS. it should return the IPFS cid and a document Id
+const uploadToIPFS = async (encryptedDocumemnt) => {
+    return await new Promise((resolve, reject) => {
+        axios.post('http://localhost:4000/uploadToIpfs',{
+            dataToUpload:encryptedDocumemnt
+        })
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+
+}
 
 //TODO function to get the uid of the user
 
@@ -72,3 +90,4 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
     console.log(`docidentity service listening at http://localhost:${port}`);
 });  
+

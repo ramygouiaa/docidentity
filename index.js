@@ -9,16 +9,48 @@ const app = express();
 
 //  enable CORS for all origins
 app.use(cors({
-    origin:"*"
-    }));
+    origin: "*"
+}));
 
 app.use(bodyParser.json());
-app.use(bodyParser.text());
 
+// function to encrypt the document data 
+const encryptDocument = async (docData) => {
+    return await new Promise((resolve, reject) => {
+        axios.post('https://localhost:3000/encryptdocdata', {
+            documentdata: docData
+        })
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
 
-//TODO function to encrypt the document data 
-
-//TODO function to decrypt the document data
+// function to decrypt the document data
+const decryptDocument = async (encryptedDoc) => {
+    return await new Promise((resolve, reject) => {
+        axios.post('https://localhost:3000/decryptdocdata', {
+            encryptedDocumentData: encryptedDoc
+        })
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
 
 //TODO function to save the encrypted document to IPFS. it should return the IPFS cid and a document Id
 

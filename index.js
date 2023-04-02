@@ -55,9 +55,26 @@ const decryptDocument = async (encryptedDoc) => {
 // function to save the encrypted document to IPFS. it should return the IPFS cid and a document Id
 const uploadToIPFS = async (encryptedDocumemnt) => {
     return await new Promise((resolve, reject) => {
-        axios.post('http://localhost:4000/uploadToIpfs',{
-            dataToUpload:encryptedDocumemnt
+        axios.post('http://localhost:4000/uploadToIpfs', {
+            dataToUpload: encryptedDocumemnt
         })
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
+
+// function to get the uid of the user
+const getUserUIDFromDatabase = async (email) => {
+    return await new Promise((resolve, reject) => {
+        axios.get(`http://localhost:4002/uploadToIpfs?email=${email}`)
             .then((response) => {
                 console.log(response.data);
                 resolve(response.data);
@@ -72,16 +89,43 @@ const uploadToIPFS = async (encryptedDocumemnt) => {
 
 }
 
-//TODO function to get the uid of the user
-
-//TODO function to anchor the document by giving the document Id and IPFS cid 
+// function to anchor the document by giving the document Id and IPFS cid 
 //the document Id should look like this <User-uid>_<Document-id>
+const anchorDocumentTransaction = async (userUid, documentId, cid) => {
+    return await new Promise((resolve, reject) => {
+        axios.post('http://localhost:4003/addbirthact', [`${userUid}_${documentId}`, cid])
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
 
-//TODO function to update the user data by adding the document Id to the documents of the user
-
-
-
-
+// function to update the user data by adding the document Id to the documents of the user
+const updateUserWithNewDocument = async (email, documentId) => {
+    return await new Promise((resolve, reject) => {
+        axios.post('http://localhost:4002/addnewdocumentusertodb', {
+            email,
+            documentId
+        })
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
 
 app.get("/", (req, res) => {
     res.status(200).send(" wellcome to docidentity");
@@ -89,5 +133,5 @@ app.get("/", (req, res) => {
 
 app.listen(port, () => {
     console.log(`docidentity service listening at http://localhost:${port}`);
-});  
+});
 

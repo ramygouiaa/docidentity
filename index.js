@@ -33,25 +33,6 @@ const encryptDocument = async (docData) => {
     })
 }
 
-// function to decrypt the document data
-const decryptDocument = async (encryptedDoc) => {
-    return await new Promise((resolve, reject) => {
-        axios.post('http://localhost:3000/decryptdocdata', {
-            encryptedDocumentData: encryptedDoc
-        })
-            .then((response) => {
-                console.log(response.data);
-                resolve(response.data);
-            })
-            .catch((error) => {
-                console.log(error);
-                reject({
-                    message: 'something went wrong!'
-                })
-            });
-    })
-}
-
 // function to save the encrypted document to IPFS. it should return the IPFS cid and a document Id
 const uploadToIPFS = async (encryptedDocumemnt) => {
     return await new Promise((resolve, reject) => {
@@ -127,14 +108,66 @@ const updateUserWithNewDocument = async (email, documentId) => {
     })
 }
 
+const getAnchoredUserDocumentIpfsCidByAnchorKey = async (anchorKey) => {
+    return await new Promise((resolve, reject) => {
+        axios.get(`http://localhost:4003/getbirthact?hash=${anchorKey}`)
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
+
+const getEncryptedDocumentDataFromIpfsByCid = async (cid) => {
+    return await new Promise((resolve, reject) => {
+        axios.get(`http://localhost:4000/getdata?cid=${cid}`)
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+
+}
+
+const decryptUserDocument = async (encryptedData) => {
+    return await new Promise((resolve, reject) => {
+        axios.post(`http://localhost:3000/decryptdocdata`, {
+            data:encryptedData
+        })
+            .then((response) => {
+                console.log(response.data);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject({
+                    message: 'something went wrong!'
+                })
+            });
+    })
+}
+
 const processUserDocument = async (email, documentData) => {
     return await new Promise(async (resolve, reject) => {
         try {
-            // 1- encrypt the document
+            // 1- encrypt the document and make sure that documentData is a string 
             const encryptedDocumentData = await encryptDocument(documentData);
+            const {data} = encryptedDocumentData
 
             // 2- upload the encrypted document to IPFS and get the docId and cid
-            const ipfsData = await uploadToIPFS(encryptedDocumentData);
+            const ipfsData = await uploadToIPFS(data);
             const { docId, cid } = ipfsData;
 
             // 3- get the user uid for anchoring in next step
@@ -160,23 +193,51 @@ const processUserDocument = async (email, documentData) => {
     })
 }
 
+//function to retrieve and decrypt a user document
+const retrieveAndProcessUserDocument = async (anchorKey) => {
+    return await new Promise( async (resolve, reject) => {
+        try {
+            //1- grab the document cid from anchor
+            const cidFromIpfs = await getAnchoredUserDocumentIpfsCidByAnchorKey(anchorKey);
+
+            //2- retrieve the encrypted document from ipfs by cid
+            const encryptedDocumentFromIpfs = await getEncryptedDocumentDataFromIpfsByCid(cidFromIpfs);
+            const {data} = encryptedDocumentFromIpfs;
+
+            //3- decrypt the doccument data 
+            const decryptedDocument = await decryptUserDocument(data);
+            console.log(decryptedDocument);
+
+            resolve(decryptedDocument)
+
+        } catch (error) {
+            next(error)
+        }
+    })
+}
+
 app.get("/", (req, res) => {
     res.status(200).send(" wellcome to docidentity");
 });
 
-app.post("/adddocument", async (req, res) => {
+app.post("/uploaddocument", async (req, res) => {
     const { email, documentData } = req.body;
-
     try {
         const processResult = await processUserDocument(email, documentData);
         res.status(200).send(processResult);
     } catch (error) {
-        res.send({
-            message:'something went wrong!',
-            errorMessage:error
-        })
+        next(error);
     }
+});
 
+app.get("/retrievedocument", async (req, res) => {
+    const anchorkey = req.query.anchorkey;
+    try {
+        const document = await retrieveAndProcessUserDocument(anchorkey);
+        res.status(200).send(document);
+    } catch (error) {
+        next(error);
+    }
 });
 
 // Error handling middleware
